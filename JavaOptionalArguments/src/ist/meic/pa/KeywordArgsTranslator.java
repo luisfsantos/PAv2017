@@ -1,13 +1,11 @@
 package ist.meic.pa;
 
-import javassist.CannotCompileException;
-import javassist.ClassPool;
-import javassist.NotFoundException;
-import javassist.Translator;
+import javassist.*;
+
 /**
  * Created by lads on 22/03/2017.
  */
-public class KeyWordArgsTranslator implements Translator {
+public class KeywordArgsTranslator implements Translator {
 
     @Override
     public void start(ClassPool classPool) throws NotFoundException, CannotCompileException {
@@ -16,6 +14,7 @@ public class KeyWordArgsTranslator implements Translator {
 
     @Override
     public void onLoad(ClassPool classPool, String s) throws NotFoundException, CannotCompileException {
-
+        CtClass ctClass = classPool.get(s);
+        System.out.println("We are translating xD");
     }
 }
