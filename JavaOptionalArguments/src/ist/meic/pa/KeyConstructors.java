@@ -14,6 +14,7 @@ public class KeyConstructors {
             Translator kwargsTranslator = new KeywordArgsTranslator();
             ClassPool pool = ClassPool.getDefault();
             Loader loader = new Loader();
+            loader.loadClass(args[0]);
             loader.addTranslator(pool, kwargsTranslator);
 
             loader.run(args[0], null);

@@ -14,6 +14,7 @@ public class KeywordArgsTranslator implements Translator {
 
     @Override
     public void onLoad(ClassPool classPool, String s) throws NotFoundException, CannotCompileException {
+        System.out.println("We are translating xD");
         CtClass ctClass = classPool.get(s);
         System.out.println("We are translating xD");
     }
