@@ -1,0 +1,4 @@
+Interesting places: Lordran, Drangleic, Lothric
+visited: 0, places: Lordran, Drangleic, Lothric
+visited: 2, places: Lordran, Yharnam, Lothric
+visited: 0, places: Lordran, Drangleic, Pthumerian
