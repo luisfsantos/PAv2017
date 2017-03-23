@@ -18,7 +18,7 @@ public class ConstructorEditor {
     CtClass ctClass;
     Optional<KeywordArgs> kwAnnotation = Optional.empty();
     Optional<CtConstructor> ctConstructor = Optional.empty();
-    HashMap<String, String> keyWordArguments;
+    HashMap<String, ValueWrapper> keyWordArguments;
 
     private final static Logger logger = Logger.getLogger(ConstructorEditor.class.getName());
 
@@ -32,7 +32,7 @@ public class ConstructorEditor {
             logger.log(Level.WARNING, "Not in a position to edit a constructor.");
             return;
         }
-        keyWordArguments = new ParseWrapper(kwAnnotation.get()).parse();
+        keyWordArguments = new ParseWrapper(kwAnnotation.get(), ctClass).parse();
     }
 
     public Optional<KeywordArgs> findAnnotation() throws ClassNotFoundException {
