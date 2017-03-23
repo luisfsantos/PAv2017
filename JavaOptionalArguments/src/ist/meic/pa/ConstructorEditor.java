@@ -5,6 +5,7 @@ import javassist.CtConstructor;
 import javassist.NotFoundException;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,6 +18,7 @@ public class ConstructorEditor {
     CtClass ctClass;
     Optional<KeywordArgs> kwAnnotation = Optional.empty();
     Optional<CtConstructor> ctConstructor = Optional.empty();
+    HashMap<String, String> keyWordArguments;
 
     private final static Logger logger = Logger.getLogger(ConstructorEditor.class.getName());
 
@@ -26,6 +28,11 @@ public class ConstructorEditor {
 
     public void run() {
         logger.log(Level.INFO,"Editing " + ctClass.getName() + " to fix constructor");
+        if (!kwAnnotation.isPresent()) {
+            logger.log(Level.WARNING, "Not in a position to edit a constructor.");
+            return;
+        }
+        keyWordArguments = new ParseWrapper(kwAnnotation.get()).parse();
     }
 
     public Optional<KeywordArgs> findAnnotation() throws ClassNotFoundException {
