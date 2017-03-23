@@ -24,7 +24,7 @@ public class KeywordArgsTranslator implements Translator {
         CtClass toTranslate = classPool.get(s);
         ConstructorEditor editor = new ConstructorEditor(toTranslate);
         try {
-            if (editor.findEditableConstructor()) {
+            if (editor.isEditable()) {
                 editor.run();
             } else {
                 logger.log(Level.INFO, "The class " + s + " does not need to be edited.");

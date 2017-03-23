@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 /**
  * Created by lads on 23/03/2017.
@@ -16,7 +17,6 @@ import java.util.logging.Logger;
 public class ConstructorEditor {
 
     CtClass ctClass;
-    Optional<KeywordArgs> kwAnnotation = Optional.empty();
     Optional<CtConstructor> ctConstructor = Optional.empty();
     HashMap<String, ValueWrapper> keyWordArguments;
 
@@ -26,41 +26,50 @@ public class ConstructorEditor {
         this.ctClass = ctClass;
     }
 
-    public void run() {
+    public void run() throws ClassNotFoundException {
         logger.log(Level.INFO,"Editing " + ctClass.getName() + " to fix constructor");
-        if (!kwAnnotation.isPresent()) {
+        if (!ctConstructor.isPresent()) {
             logger.log(Level.WARNING, "Not in a position to edit a constructor.");
             return;
         }
-        keyWordArguments = new ParseWrapper(kwAnnotation.get(), ctClass).parse();
+        keyWordArguments = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass).parse();
+
     }
 
-    public Optional<KeywordArgs> findAnnotation() throws ClassNotFoundException {
-        if (!ctConstructor.isPresent()) {
-            logger.log(Level.INFO,"There is no constructor that has param Object[] in " + ctClass.getName());
-            return kwAnnotation;
-        }
-        Object[] annotations = ctConstructor.get().getAnnotations();
+    public Optional<KeywordArgs> findAnnotation(CtConstructor ctConstructor) throws ClassNotFoundException {
+        Object[] annotations = ctConstructor.getAnnotations();
         for (Object annotation: annotations) {
             if (annotation instanceof KeywordArgs) {
-                kwAnnotation = Optional.of((KeywordArgs) annotation);
-                return kwAnnotation;
+                return Optional.of((KeywordArgs) annotation);
             }
         }
-        logger.log(Level.INFO,"There is no constructor that has a KWA in " + ctClass.getName());
-        return kwAnnotation;
+        logger.log(Level.INFO,"The constructor " + ctConstructor.getLongName() + " does not have an annotation");
+        return Optional.empty();
     }
 
-    public boolean findEditableConstructor() throws NotFoundException, ClassNotFoundException {
-        CtConstructor constructors[] = ctClass.getConstructors();
-        for (CtConstructor constructor: constructors) {
-            if(Arrays.stream(constructor.getParameterTypes())
-                    .filter(param -> param.isArray())
-                    .count() == 1) { //TODO: this if is wrong and should check if we have a java.lang.Object but that is proving difficult right now
-                ctConstructor = Optional.of(constructor);
-                return findAnnotation().isPresent();
-            }
+    public boolean hasAnnotation(CtConstructor ctConstructor) {
+        try {
+            return findAnnotation(ctConstructor).isPresent();
+        } catch (ClassNotFoundException e) {
+            logger.log(Level.SEVERE, e.getMessage());
+            e.printStackTrace();
+            return false;
         }
-        return false;
+    }
+
+    public Optional<CtConstructor> findEditableConstructor() throws NotFoundException, ClassNotFoundException {
+        Stream<CtConstructor> constructors = Arrays.stream(ctClass.getConstructors());
+        return constructors.filter(c -> hasAnnotation(c))
+                .peek(c -> logger.log(Level.INFO, "Constructor " + c.getLongName() + " found with correct annotation"))
+                .findFirst();
+    }
+
+    public boolean isEditable() throws NotFoundException, ClassNotFoundException {
+        if (ctConstructor.isPresent()) {
+            return true;
+        } else {
+            ctConstructor = findEditableConstructor();
+            return ctConstructor.isPresent();
+        }
     }
 }
