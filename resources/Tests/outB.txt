@@ -1,0 +1,5 @@
+width:200,height:50,margin:10,name:Extended
+width:80,height:50,margin:10,name:Extended
+width:200,height:30,margin:10,name:Extended
+width:90,height:20,margin:10,name:Extended
+width:90,height:20,margin:10,name:Nice
