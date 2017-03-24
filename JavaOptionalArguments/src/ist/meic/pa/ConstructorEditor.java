@@ -1,5 +1,6 @@
 package ist.meic.pa;
 
+import javassist.CannotCompileException;
 import javassist.CtClass;
 import javassist.CtConstructor;
 import javassist.NotFoundException;
@@ -26,14 +27,44 @@ public class ConstructorEditor {
         this.ctClass = ctClass;
     }
 
-    public void run() throws ClassNotFoundException {
+    public void run() throws ClassNotFoundException, CannotCompileException {
         logger.log(Level.INFO,"Editing " + ctClass.getName() + " to fix constructor");
         if (!ctConstructor.isPresent()) {
             logger.log(Level.WARNING, "Not in a position to edit a constructor.");
             return;
         }
         keyWordArguments = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass).parse();
+        injectCodeAnnotatedConstructor(keyWordArguments);
+    }
 
+    private void injectCodeAnnotatedConstructor(HashMap<String, ValueWrapper> keyWordArguments) throws CannotCompileException {
+        if (!ctConstructor.isPresent()) {
+            logger.log(Level.SEVERE, "There is no constructor in which to inject code.");
+            return;
+        }
+        CtConstructor constructor = ctConstructor.get();
+        StringBuilder template = new StringBuilder();
+
+
+        template.append("{");
+        // assign default values
+        for (String field : keyWordArguments.keySet()) {
+            template.append(field);
+            template.append("=");
+            template.append(keyWordArguments.get(field).defaultValue);
+            template.append(";");
+        }
+        // overwrite defaults when applicable
+        template.append("Class my$Class = this.getClass();");
+        template.append(
+                "for (int i = 0; i < $1.length; i+=2) {" +
+                        "java.lang.reflect.Field field = my$Class.getDeclaredField((String)$1[i]);" +
+                        "field.set(this, $1[i+1]);" +
+                "}");
+
+        template.append("}");
+
+        constructor.setBody(template.toString());
     }
 
     public Optional<KeywordArgs> findAnnotation(CtConstructor ctConstructor) throws ClassNotFoundException {
