@@ -1,18 +1,25 @@
 <project name="KeyConstructors" default="jar" basedir=".">
-    <property name="src.dir" value="${basedir}/src"/>
-    <property name="classes.dir" value="${basedir}/classes"/>
+    <property name="src.dir" value="${basedir}/src" />
+    <property name="classes.dir" value="${basedir}/classes" />
     <property name="lib.dir" value="${basedir}/lib" />
     <property name="jar.dir" value="${basedir}" />
     <property name="jar.name" value="${basedir}/keyConstructors.jar"/>
     <property name="main_class" value="ist.meic.pa.KeyConstructors"/>
 
+    <property name="junit.path" value="${basedir}/lib/junit-4.12.jar" />
+    <property name="hamcrest.path" value="${basedir}/lib/hamcrest-core-1.3.jar" />
+    <property name="test.classes.dir" value="${basedir}/test/classes" />
+    <property name="test.dir" value="${basedir}/test" />
+
 
     <target name="init">
-        <mkdir dir="classes" />
+        <mkdir dir="${classes.dir}" />
+        <mkdir dir="${test.classes.dir}" />
     </target>
 
     <target name="clean">
-        <delete dir="classes" />
+        <delete dir="${classes.dir}" />
+        <delete dir="${test.classes.dir}" />
     </target>
 
     <target name="compile" depends="init">
@@ -27,6 +34,30 @@
         </javac>
     </target>
 
+    <target name="compile-test" depends="compile">
+        <javac includeantruntime="false"
+               classpath="${junit.path}:${classes.dir}"
+               srcdir="${test.dir}"
+               destdir="${test.classes.dir}"/>
+    </target>
+
+    <target name="test" depends="compile-test">
+        <junit>
+            <formatter type="plain" usefile="false"/>
+            <classpath>
+                <pathelement location="${junit.path}"/>
+                <pathelement location="${hamcrest.path}"/>
+                <pathelement location="${classes.dir}"/>
+                <pathelement location="${test.classes.dir}"/>
+            </classpath>
+            <batchtest>
+                <fileset dir="${test.classes.dir}">
+                    <include name="**/*.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
     <target name="jar" depends="compile">
         <jar destfile="${jar.name}" basedir="${classes.dir}">
             <manifest>
@@ -35,4 +66,5 @@
             <zipgroupfileset dir="${lib.dir}" includes="*.jar"/>
         </jar>
     </target>
+
 </project>
