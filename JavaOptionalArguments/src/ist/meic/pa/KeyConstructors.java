@@ -21,7 +21,6 @@ final public class KeyConstructors {
             pool.appendClassPath(workDir); // add current dir to classpath
             loader.addTranslator(pool, kwargsTranslator);
             loader.loadClass(classToRun);
-
             loader.run(classToRun, null);
 
         }
