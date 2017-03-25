@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -70,17 +69,36 @@ public class ConstructorEditor {
             template.append(keyWordArguments.get(field).defaultValue);
             template.append(";");
         }
+
+        // inject auxiliary method - get field from name, including inherited fields
+        String auxMethodTemplate = "private java.lang.reflect.Field getField$injected(java.lang.String name, java.lang.Class type) {" +
+                "        do {" +
+                "            try {" +
+                "                return type.getDeclaredField(name);" +
+                "            } catch (java.lang.NoSuchFieldException e) {" +
+                "                type = type.getSuperclass();" +
+                "            }" +
+                "        } while (type != null);" +
+                "        return null;" +
+                "    }";
+        CtMethod method = CtMethod.make(auxMethodTemplate, ctClass);
+        ctClass.addMethod(method);
+
         // overwrite defaults when applicable
-        template.append("Class my$Class = this.getClass();");
+        template.append("java.lang.Class my$Class = this.getClass();");
         template.append(
                 "for (int i = 0; i < $1.length; i+=2) {" +
-                        "java.lang.reflect.Field field = my$Class.getDeclaredField((String)$1[i]);" +
+                        "java.lang.reflect.Field field = getField$injected((java.lang.String)$1[i], my$Class);" +
+                        "if (field == null) {" +
+                            "throw new RuntimeException(\"Unrecognized keyword: \" + (java.lang.String)$1[i]);" +
+                        "}" +
                         "field.set(this, $1[i+1]);" +
                 "}");
 
         template.append("}");
-
         constructor.setBody(template.toString());
+
+
     }
 
     public Optional<KeywordArgs> findAnnotation(CtConstructor ctConstructor) throws ClassNotFoundException {
