@@ -17,6 +17,7 @@ public class ParserTests {
     private final String UNKNOWN = "";
     private final String VOID_WIDGET = "someNumber,someChar,someDouble";
     private final String WIDGET = "width=100,height=50,margin=5";
+    private final String STR_WITH_COMMA_IN_VALUE = "first,second=\"What's up, homie?\",third=\"$tring,\"";
 
 
     private ParseWrapper pw;
@@ -119,6 +120,19 @@ public class ParserTests {
         expected.put("margin", "5");
 
         HashMap<String, String> result = Parser.parse(WIDGET);
+
+        assertEquals("Wrong size of parsed HashMap",expected.values().size(), result.values().size());
+        assertTrue("Unexpected HashMap content", result.equals(expected));
+    }
+
+    @Test
+    public void testWithValueWithCommasInIt() {
+        HashMap<String, String> expected = new HashMap<>();
+        expected.put("first", null);
+        expected.put("second", "\"What's up, homie?\"");
+        expected.put("third", "\"$tring,\"");
+
+        HashMap<String, String> result = Parser.parse(STR_WITH_COMMA_IN_VALUE);
 
         assertEquals("Wrong size of parsed HashMap",expected.values().size(), result.values().size());
         assertTrue("Unexpected HashMap content", result.equals(expected));
