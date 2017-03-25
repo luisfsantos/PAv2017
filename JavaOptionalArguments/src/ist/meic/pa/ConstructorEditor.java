@@ -1,15 +1,13 @@
 package ist.meic.pa;
 
-import javassist.CannotCompileException;
-import javassist.CtClass;
-import javassist.CtConstructor;
-import javassist.NotFoundException;
+import javassist.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -20,6 +18,8 @@ public class ConstructorEditor {
     CtClass ctClass;
     Optional<CtConstructor> ctConstructor = Optional.empty();
     HashMap<String, ValueWrapper> keyWordArguments;
+    String name;
+    static final String GLOBAL_SETTER = "global$setter";
 
     private final static Logger logger = Logger.getLogger(ConstructorEditor.class.getName());
 
@@ -27,14 +27,30 @@ public class ConstructorEditor {
         this.ctClass = ctClass;
     }
 
-    public void run() throws ClassNotFoundException, CannotCompileException {
+    public void run() throws ClassNotFoundException, CannotCompileException, NotFoundException {
         logger.log(Level.INFO,"Editing " + ctClass.getName() + " to fix constructor");
         if (!ctConstructor.isPresent()) {
             logger.log(Level.WARNING, "Not in a position to edit a constructor.");
             return;
         }
         keyWordArguments = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass).parse();
+        injectDefaultConstructor(keyWordArguments);
         injectCodeAnnotatedConstructor(keyWordArguments);
+    }
+
+    private void injectDefaultConstructor(HashMap<String, ValueWrapper> keyWordArguments) throws CannotCompileException {
+        StringBuilder defaultConstructor = new StringBuilder();
+        defaultConstructor.append("public " + ctClass.getName() + "() {");
+        for (String field : keyWordArguments.keySet()) {
+            defaultConstructor.append(field);
+            defaultConstructor.append("=");
+            defaultConstructor.append(keyWordArguments.get(field).defaultValue);
+            defaultConstructor.append(";");
+        }
+        defaultConstructor.append(" }");
+        logger.log(Level.INFO, "The default constructor looks like this: " + defaultConstructor.toString());
+        CtConstructor newConstructor = new CtNewConstructor().make(defaultConstructor.toString(), ctClass);
+        ctClass.addConstructor(newConstructor);
     }
 
     private void injectCodeAnnotatedConstructor(HashMap<String, ValueWrapper> keyWordArguments) throws CannotCompileException {
