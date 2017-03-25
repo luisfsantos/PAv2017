@@ -28,13 +28,13 @@ public class ParserTests {
     @Test
     public void testExtWidget() {
         HashMap<String, String> expected = new HashMap<>();
-        expected.put("name", "Extended");
+        expected.put("name", "\"Extended\"");
         expected.put("width", "200");
         expected.put("margin", "10");
 
         HashMap<String, String> result = Parser.parse(EXT_WIDGET);
 
-        assertEquals("Wrong size of parsed HashMap", result.values().size(), expected.values().size());
+        assertEquals("Wrong size of parsed HashMap",expected.values().size(), result.values().size());
         assertTrue("Unexpected HashMap content", result.equals(expected));
     }
 
@@ -46,20 +46,20 @@ public class ParserTests {
 
         HashMap<String, String> result = Parser.parse(FUNC_WIDGET);
 
-        assertEquals("Wrong size of parsed HashMap", result.values().size(), expected.values().size());
+        assertEquals("Wrong size of parsed HashMap",expected.values().size(), result.values().size());
         assertTrue("Unexpected HashMap content", result.equals(expected));
     }
 
     @Test
     public void testKeyPlaces() {
         HashMap<String, String> expected = new HashMap<>();
-        expected.put("first", "Lordran");
-        expected.put("second", "Drangleic");
-        expected.put("third", "Lothric");
+        expected.put("first", "\"Lordran\"");
+        expected.put("second", "\"Drangleic\"");
+        expected.put("third", "\"Lothric\"");
 
         HashMap<String, String> result = Parser.parse(KEY_PLACES);
 
-        assertEquals("Wrong size of parsed HashMap", result.values().size(), expected.values().size());
+        assertEquals("Wrong size of parsed HashMap",expected.values().size(), result.values().size());
         assertTrue("Unexpected HashMap content", result.equals(expected));
     }
 
@@ -71,20 +71,20 @@ public class ParserTests {
 
         HashMap<String, String> result = Parser.parse(KEY_VISITED);
 
-        assertEquals("Wrong size of parsed HashMap", result.values().size(), expected.values().size());
+        assertEquals("Wrong size of parsed HashMap",expected.values().size(), result.values().size());
         assertTrue("Unexpected HashMap content", result.equals(expected));
     }
 
     @Test
     public void testMixKeys() {
         HashMap<String, String> expected = new HashMap<>();
-        expected.put("l", "b");
+        expected.put("l", "10");
         expected.put("b", null);
         expected.put("v", "true");
 
         HashMap<String, String> result = Parser.parse(MIX_KEYS);
 
-        assertEquals("Wrong size of parsed HashMap", result.values().size(), expected.values().size());
+        assertEquals("Wrong size of parsed HashMap",expected.values().size(), result.values().size());
         assertTrue("Unexpected HashMap content", result.equals(expected));
     }
 
@@ -94,7 +94,7 @@ public class ParserTests {
 
         HashMap<String, String> result = Parser.parse(UNKNOWN);
 
-        assertEquals("Wrong size of parsed HashMap", result.values().size(), expected.values().size());
+        assertEquals("Wrong size of parsed HashMap", expected.values().size(), result.values().size());
         assertTrue("Unexpected HashMap content", result.equals(expected));
     }
 
@@ -103,11 +103,11 @@ public class ParserTests {
         HashMap<String, String> expected = new HashMap<>();
         expected.put("someNumber", null);
         expected.put("someChar", null);
-        expected.put("someDouble", "true");
+        expected.put("someDouble", null);
 
         HashMap<String, String> result = Parser.parse(VOID_WIDGET);
 
-        assertEquals("Wrong size of parsed HashMap", result.values().size(), expected.values().size());
+        assertEquals("Wrong size of parsed HashMap",expected.values().size(), result.values().size());
         assertTrue("Unexpected HashMap content", result.equals(expected));
     }
 
@@ -120,7 +120,7 @@ public class ParserTests {
 
         HashMap<String, String> result = Parser.parse(WIDGET);
 
-        assertEquals("Wrong size of parsed HashMap", result.values().size(), expected.values().size());
+        assertEquals("Wrong size of parsed HashMap",expected.values().size(), result.values().size());
         assertTrue("Unexpected HashMap content", result.equals(expected));
     }
 
