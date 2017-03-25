@@ -8,7 +8,26 @@ public class ValueWrapper {
     // right now I could only identify the value
     String defaultValue;
 
-    public ValueWrapper(String defaultValue) {
+    // if true, it means that a default value has been provided, if not it was not
+    boolean isSet = true;
+    public ValueWrapper(String defaultValue, boolean isSet) {
         this.defaultValue = defaultValue;
+        this.isSet = isSet;
+    }
+
+    /**
+     * Instantiate ValueWrapper with isSet set to true
+     * @param defaultValue default value of the parameter
+     */
+    public ValueWrapper(String defaultValue) {
+        this(defaultValue, true);
+    }
+
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    public boolean isSet() {
+        return isSet;
     }
 }
