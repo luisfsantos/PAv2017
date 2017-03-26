@@ -138,5 +138,4 @@ public class ParserTests {
         assertTrue("Unexpected HashMap content", result.equals(expected));
     }
 
-
 }
