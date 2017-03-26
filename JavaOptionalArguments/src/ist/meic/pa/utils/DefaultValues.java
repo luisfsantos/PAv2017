@@ -20,6 +20,7 @@ public class DefaultValues {
         defaultValues.put(CtPrimitiveType.booleanType, new Character('\0'));
         defaultValues.put(CtPrimitiveType.byteType, new Byte((byte) 0));
         defaultValues.put(CtPrimitiveType.floatType, new Float(0.0F));
+        defaultValues.put(CtPrimitiveType.charType, new Character('\u0000'));
     }
 
     public static final <T> T defaultValueFor(CtClass clazz) {
