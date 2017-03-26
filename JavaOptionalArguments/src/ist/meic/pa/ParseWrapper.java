@@ -27,7 +27,6 @@ public final class ParseWrapper {
     private static final Logger logger = Logger.getLogger(ParseWrapper.class.getName());
 
     public ParseWrapper(KeywordArgs keywordArgs, CtClass ctClass) {
-        logger.addHandler(new StreamHandler(System.out, new SimpleFormatter()));
         kwAnnotation = keywordArgs;
         kwArgsStr = keywordArgs.value();
         this.ctClass = ctClass;
