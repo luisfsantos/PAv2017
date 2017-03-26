@@ -16,7 +16,7 @@ public class KeywordArgsTranslator implements Translator {
 
     @Override
     public void start(ClassPool classPool) throws NotFoundException, CannotCompileException {
-
+        // empty
     }
 
     @Override
