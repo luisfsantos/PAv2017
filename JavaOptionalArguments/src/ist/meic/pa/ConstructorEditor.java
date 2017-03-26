@@ -44,7 +44,7 @@ public class ConstructorEditor {
         for (String field : keyWordArguments.keySet()) {
             defaultConstructor.append(field);
             defaultConstructor.append("=");
-            defaultConstructor.append(keyWordArguments.get(field).defaultValue);
+            defaultConstructor.append(keyWordArguments.get(field).getDefaultValue());
             defaultConstructor.append(";");
         }
         defaultConstructor.append(" }");
@@ -81,7 +81,7 @@ public class ConstructorEditor {
         for (String field : keyWordArguments.keySet()) {
             template.append(field);
             template.append("=");
-            template.append(keyWordArguments.get(field).defaultValue);
+            template.append(keyWordArguments.get(field).getDefaultValue());
             template.append(";");
         }
 
