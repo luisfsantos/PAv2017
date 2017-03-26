@@ -29,11 +29,6 @@ public final class ParseWrapper {
     private CtClass ctClass;
     private HashMap<String, ValueWrapper> values;
     private final DirectedAcyclicGraph<String, DefaultEdge> dependencies = new DirectedAcyclicGraph<>(DefaultEdge.class);
-
-    KeywordArgs kwAnnotation;
-    CtClass ctClass;
-    HashMap<String, ValueWrapper> values = new HashMap<>();
-    DirectedAcyclicGraph<String, DefaultEdge> dependancies = new DirectedAcyclicGraph<>(DefaultEdge.class);
     private static final Logger logger = Logger.getLogger(ParseWrapper.class.getName());
 
     public ParseWrapper(KeywordArgs keywordArgs, CtClass ctClass) {
