@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -68,7 +69,7 @@ public class ConstructorEditor {
         CtMethod method = CtMethod.make(auxMethodTemplate, ctClass);
         ctClass.addMethod(method);
     }
-
+  
     private void injectCodeAnnotatedConstructor(HashMap<String, ValueWrapper> keyWordArguments) throws CannotCompileException {
         if (!ctConstructor.isPresent()) {
             logger.log(Level.SEVERE, "There is no constructor in which to inject code.");
