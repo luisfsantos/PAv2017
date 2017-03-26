@@ -1,14 +1,13 @@
 package ist.meic.pa;
 
-import javassist.CtClass;
-import javassist.CtConstructor;
-import javassist.NotFoundException;
+import javassist.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -19,6 +18,8 @@ public class ConstructorEditor {
     CtClass ctClass;
     Optional<CtConstructor> ctConstructor = Optional.empty();
     HashMap<String, ValueWrapper> keyWordArguments;
+    String name;
+    static final String GLOBAL_SETTER = "global$setter";
 
     private final static Logger logger = Logger.getLogger(ConstructorEditor.class.getName());
 
@@ -26,14 +27,60 @@ public class ConstructorEditor {
         this.ctClass = ctClass;
     }
 
-    public void run() throws ClassNotFoundException {
+    public void run() throws ClassNotFoundException, CannotCompileException, NotFoundException {
         logger.log(Level.INFO,"Editing " + ctClass.getName() + " to fix constructor");
         if (!ctConstructor.isPresent()) {
             logger.log(Level.WARNING, "Not in a position to edit a constructor.");
             return;
         }
         keyWordArguments = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass).parse();
+        injectDefaultConstructor(keyWordArguments);
+        injectCodeAnnotatedConstructor(keyWordArguments);
+    }
 
+    private void injectDefaultConstructor(HashMap<String, ValueWrapper> keyWordArguments) throws CannotCompileException {
+        StringBuilder defaultConstructor = new StringBuilder();
+        defaultConstructor.append("public " + ctClass.getName() + "() {");
+        for (String field : keyWordArguments.keySet()) {
+            defaultConstructor.append(field);
+            defaultConstructor.append("=");
+            defaultConstructor.append(keyWordArguments.get(field).defaultValue);
+            defaultConstructor.append(";");
+        }
+        defaultConstructor.append(" }");
+        logger.log(Level.INFO, "The default constructor looks like this: " + defaultConstructor.toString());
+        CtConstructor newConstructor = new CtNewConstructor().make(defaultConstructor.toString(), ctClass);
+        ctClass.addConstructor(newConstructor);
+    }
+
+    private void injectCodeAnnotatedConstructor(HashMap<String, ValueWrapper> keyWordArguments) throws CannotCompileException {
+        if (!ctConstructor.isPresent()) {
+            logger.log(Level.SEVERE, "There is no constructor in which to inject code.");
+            return;
+        }
+        CtConstructor constructor = ctConstructor.get();
+        StringBuilder template = new StringBuilder();
+
+
+        template.append("{");
+        // assign default values
+        for (String field : keyWordArguments.keySet()) {
+            template.append(field);
+            template.append("=");
+            template.append(keyWordArguments.get(field).defaultValue);
+            template.append(";");
+        }
+        // overwrite defaults when applicable
+        template.append("Class my$Class = this.getClass();");
+        template.append(
+                "for (int i = 0; i < $1.length; i+=2) {" +
+                        "java.lang.reflect.Field field = my$Class.getDeclaredField((String)$1[i]);" +
+                        "field.set(this, $1[i+1]);" +
+                "}");
+
+        template.append("}");
+
+        constructor.setBody(template.toString());
     }
 
     public Optional<KeywordArgs> findAnnotation(CtConstructor ctConstructor) throws ClassNotFoundException {
