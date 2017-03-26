@@ -16,7 +16,7 @@ public class DefaultValues {
         defaultValues.put(CtPrimitiveType.shortType, "0");
         defaultValues.put(CtPrimitiveType.doubleType, "0.0");
         defaultValues.put(CtPrimitiveType.longType, "0L");
-        defaultValues.put(CtPrimitiveType.booleanType, "False");
+        defaultValues.put(CtPrimitiveType.booleanType, "false");
         defaultValues.put(CtPrimitiveType.charType, "Character.MIN_VALUE");
         defaultValues.put(CtPrimitiveType.byteType, "0");
         defaultValues.put(CtPrimitiveType.floatType, "0.0F");
