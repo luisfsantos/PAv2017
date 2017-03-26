@@ -42,6 +42,28 @@ class ExtendedWidgetInheritsDefault extends Widget {
 
 }
 
+class A {
+    int a;
+    int b;
+    int c;
+
+    @KeywordArgs("a=1,b=2,c")
+    public A(Object... args) { }
+}
+
+class B extends A {
+    int d;
+
+    @KeywordArgs("d,a=3,b")
+    public B(Object... args) { }
+}
+
+class C extends B {
+    int e;
+
+    @KeywordArgs("e,c,a,b=1")
+    public C(Object... args){ }
+}
 
 public class ParseWrapperTests {
     @Before
@@ -81,6 +103,23 @@ public class ParseWrapperTests {
         expected.put("width", new ValueWrapper("200"));
         expected.put("margin", new ValueWrapper("10"));
         expected.put("height", new ValueWrapper("50"));
+
+        ParseWrapper pw = new ParseWrapper(kwargs, ctClass);
+        HashMap<String, ValueWrapper> result = pw.parse();
+        assertEquals("Wrong size of parsed HashMap", expected.size(), result.size());
+        assertTrue("Unexpected HashMap content.\nExpected: " + expected + "\nActual: " + result, result.equals(expected));
+    }
+
+    @Test
+    public void multipleLevelIheritanceTest() throws NoSuchMethodException, NotFoundException {
+        KeywordArgs kwargs = C.class.getConstructor(Object[].class).getAnnotation(KeywordArgs.class);
+        CtClass ctClass = ClassPool.getDefault().getCtClass(C.class.getName());
+
+        HashMap<String, ValueWrapper> expected = new HashMap<>();
+        expected.put("a", new ValueWrapper("3"));
+        expected.put("b", new ValueWrapper("1"));
+        expected.put("c", new ValueWrapper("0"));
+        expected.put("e", new ValueWrapper("0"));
 
         ParseWrapper pw = new ParseWrapper(kwargs, ctClass);
         HashMap<String, ValueWrapper> result = pw.parse();
