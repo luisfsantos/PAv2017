@@ -2,6 +2,7 @@ package ist.meic.pa;
 
 import javassist.CannotCompileException;
 import javassist.CtClass;
+import javassist.CtConstructor;
 import javassist.NotFoundException;
 import org.jgrapht.experimental.dag.DirectedAcyclicGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -57,12 +58,13 @@ public final class ParseWrapper {
             String kwargsStr;
 
             logger.info("# Start looking for inherited kwargs");
-            while(!nullKeys.isEmpty() && !parent.getClass().equals(Object.class)) {
+            while(!nullKeys.isEmpty() || !parent.getName().equals(Object.class.getName())) {
                 logger.info("\tParent class: " + parent.getName());
-                ctorStrOpt  = getKwargsStringFromCtor(parent.getClass());
+                ctorStrOpt  = getKwargsStringFromCtor(parent);
                 if (!ctorStrOpt.isPresent()) {
                     // skip loop iteration, KeywordArgs annotation not found in any of the class's constructors
                     logger.info("\t\t-> this class doesn't have an annotated ctor, skipping...");
+                    parent = parent.getSuperclass();
                     continue;
                 }
 
@@ -92,6 +94,8 @@ public final class ParseWrapper {
             values = wrapValues(kwargs, ctClass);
             logger.info("Size of wrapped hashmap= " + values.size());
         } catch (NotFoundException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
         //TODO: regex code which also puts in the values all the inherited values from the super classes
@@ -130,20 +134,26 @@ public final class ParseWrapper {
         return result;
     }
 
-    private Optional<Constructor> getAnnotatedConstructor(Class clazz) {
-        Constructor[] ctors = clazz.getConstructors();
-        for (Constructor ctor : ctors) {
-            if (ctor.isAnnotationPresent(KeywordArgs.class)) {
+    private Optional<CtConstructor> getAnnotatedConstructor(CtClass clazz) {
+        CtConstructor[] ctors = clazz.getConstructors();
+        logger.info("# Start cycling through ctors of " + clazz.getName());
+        for (CtConstructor ctor : ctors) {
+            logger.info("\t* current ctor: " + ctor.toString());
+            if (ctor.hasAnnotation(KeywordArgs.class)) {
+                logger.info("\t* " + ctor.toString() + " has KeywordArgs annotation");
                 return Optional.of(ctor);
             }
+            logger.info("\t* " + ctor.toString() + " does not have KeywordArgs annotation");
         }
+        logger.info("# Start cycling through ctors of " + clazz.getName());
+
         return Optional.empty();
     }
 
-    private Optional<String> getKwargsStringFromCtor(Class clazz) {
-        Optional<Constructor> ctor = getAnnotatedConstructor(clazz);
+    private Optional<String> getKwargsStringFromCtor(CtClass clazz) throws ClassNotFoundException {
+        Optional<CtConstructor> ctor = getAnnotatedConstructor(clazz);
         if (ctor.isPresent()) {
-            Constructor annotatedCtor = ctor.get();
+            CtConstructor annotatedCtor = ctor.get();
             KeywordArgs kwargsAnnotation = (KeywordArgs) annotatedCtor.getAnnotation(KeywordArgs.class);
             String kwargsStr = kwargsAnnotation.value();
             return Optional.of(kwargsStr);
