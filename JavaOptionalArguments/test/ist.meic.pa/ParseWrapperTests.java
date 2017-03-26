@@ -71,8 +71,20 @@ public class ParseWrapperTests {
      * Test when default parameters are inherited.
      */
     @Test
-    public void testWithDefaultInheritance() {
-        // TODO
-        fail("Todo");
+    public void testWithDefaultInheritance() throws NoSuchMethodException, NotFoundException {
+        // Expected: name="Extended", width=200, margin=10, height=50
+        KeywordArgs kwargs = ExtendedWidgetInheritsDefault.class.getConstructor(Object[].class).getAnnotation(KeywordArgs.class);
+        CtClass ctClass = ClassPool.getDefault().getCtClass(ExtendedWidgetInheritsDefault.class.getName());
+
+        HashMap<String, ValueWrapper> expected = new HashMap<>();
+        expected.put("name", new ValueWrapper("\"Extended\""));
+        expected.put("width", new ValueWrapper("200"));
+        expected.put("margin", new ValueWrapper("10"));
+        expected.put("height", new ValueWrapper("50"));
+
+        ParseWrapper pw = new ParseWrapper(kwargs, ctClass);
+        HashMap<String, ValueWrapper> result = pw.parse();
+        assertEquals("Wrong size of parsed HashMap", expected.size(), result.size());
+        assertTrue("Unexpected HashMap content.\nExpected: " + expected + "\nActual: " + result, result.equals(expected));
     }
 }
