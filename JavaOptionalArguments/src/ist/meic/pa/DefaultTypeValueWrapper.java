@@ -4,6 +4,8 @@ import ist.meic.pa.utils.DefaultValues;
 import javassist.CannotCompileException;
 import javassist.CtClass;
 import javassist.NotFoundException;
+import java.util.logging.Logger;
+
 
 
 /**
@@ -13,10 +15,18 @@ import javassist.NotFoundException;
  * type should be used.
  */
 public class DefaultTypeValueWrapper extends ValueWrapper {
+    private static final Logger logger = Logger.getLogger(DefaultTypeValueWrapper.class.getName());
+
     public DefaultTypeValueWrapper(CtClass ctClass, String fieldName) throws NotFoundException, CannotCompileException {
-       CtClass fieldType =  ctClass.getField(fieldName).getType();
-       // TODO IMPORTANT should this really be a string? Or maybe ValueWrapper should be refactored
-       // in particular, how will null be distinguished from the string "null" (isSet) attribute?
-       defaultValue = DefaultValues.defaultValueFor(fieldType.toClass()).toString();
+       logger.info("DefaultValue request for class:field_name " + ctClass.toString() + ":" +fieldName);
+
+        CtClass fieldType =  ctClass.getField(fieldName).getType();
+
+       Object defValue = DefaultValues.defaultValueFor(fieldType);
+        if (defValue == null) {
+            defaultValue = null;
+        } else {
+            defaultValue = defValue.toString();
+        }
     }
 }

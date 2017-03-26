@@ -7,10 +7,8 @@ import javassist.NotFoundException;
 import org.jgrapht.experimental.dag.DirectedAcyclicGraph;
 import org.jgrapht.graph.DefaultEdge;
 
-import java.lang.reflect.Constructor;
 import java.util.*;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
@@ -50,6 +48,7 @@ public final class ParseWrapper {
             // TODO: optimize if there is time
             // Gets all of the keys that have "null" as the value
             Collection<String> nullKeys = filterOutKeysWithNullValue(kwargs);
+            Collection<String> nullKeysCopy = new ArrayList<>(nullKeys);
             logger.info("Number of values with null keys = " + nullKeys.size());
 
             HashMap<String, String> parentKwargs; // used in loop below
@@ -58,7 +57,7 @@ public final class ParseWrapper {
             String kwargsStr;
 
             logger.info("# Start looking for inherited kwargs");
-            while(!nullKeys.isEmpty() || !parent.getName().equals(Object.class.getName())) {
+            while(!nullKeysCopy.isEmpty() && !(parent == null)) {
                 logger.info("\tParent class: " + parent.getName());
                 ctorStrOpt  = getKwargsStringFromCtor(parent);
                 if (!ctorStrOpt.isPresent()) {
@@ -74,13 +73,18 @@ public final class ParseWrapper {
                 logger.info("\t\t-> kwargs size= " + parentKwargs.size());
 
                 for (String key : nullKeys) {
+                    if (!nullKeysCopy.contains(key)) {
+                        // this value has already been inherited
+                        continue;
+                    }
+
                     String parentVal = parentKwargs.get(key);
                     if (parentKwargs.containsKey(key) && parentVal != null) {
                         logger.info("\t\t-> [!!] inhereting " + key + ":" + parentVal);
                         kwargs.put(key, parentVal);
-                        nullKeys.remove(key);
+                        nullKeysCopy.remove(key);
                     }
-                    if (nullKeys.isEmpty()) {
+                    if (nullKeysCopy.isEmpty()) {
                         // optimization: all values have a value
                         logger.info("\t\t-> all kwargs have a value, ending for loop...");
                         break;
@@ -110,7 +114,7 @@ public final class ParseWrapper {
             try {
 
                 if (entry.getValue() == null) {
-                    vw = new DefaultTypeValueWrapper(clazz, entry.getValue());
+                    vw = new DefaultTypeValueWrapper(clazz, entry.getKey());
                 } else {
                     vw = new ValueWrapper(entry.getValue());
                 }
