@@ -34,6 +34,7 @@ public class ConstructorEditor {
             return;
         }
         keyWordArguments = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass).parse();
+        injectFieldGetter();
         injectDefaultConstructor(keyWordArguments);
         injectCodeAnnotatedConstructor(keyWordArguments);
     }
@@ -44,7 +45,7 @@ public class ConstructorEditor {
         for (String field : keyWordArguments.keySet()) {
             defaultConstructor.append(field);
             defaultConstructor.append("=");
-            defaultConstructor.append(keyWordArguments.get(field).defaultValue);
+            defaultConstructor.append(keyWordArguments.get(field).getDefaultValue());
             defaultConstructor.append(";");
         }
         defaultConstructor.append(" }");
@@ -53,6 +54,22 @@ public class ConstructorEditor {
         ctClass.addConstructor(newConstructor);
     }
 
+    private void injectFieldGetter() throws CannotCompileException {
+        // inject auxiliary method - get field from name, including inherited fields
+        String auxMethodTemplate = "private java.lang.reflect.Field getField$injected(java.lang.String name, java.lang.Class type) {" +
+                "        do {" +
+                "            try {" +
+                "                return type.getDeclaredField(name);" +
+                "            } catch (java.lang.NoSuchFieldException e) {" +
+                "                type = type.getSuperclass();" +
+                "            }" +
+                "        } while (type != null);" +
+                "        return null;" +
+                "    }";
+        CtMethod method = CtMethod.make(auxMethodTemplate, ctClass);
+        ctClass.addMethod(method);
+    }
+  
     private void injectCodeAnnotatedConstructor(HashMap<String, ValueWrapper> keyWordArguments) throws CannotCompileException {
         if (!ctConstructor.isPresent()) {
             logger.log(Level.SEVERE, "There is no constructor in which to inject code.");
@@ -60,26 +77,27 @@ public class ConstructorEditor {
         }
         CtConstructor constructor = ctConstructor.get();
         StringBuilder template = new StringBuilder();
-
-
         template.append("{");
         // assign default values
         for (String field : keyWordArguments.keySet()) {
             template.append(field);
             template.append("=");
-            template.append(keyWordArguments.get(field).defaultValue);
+            template.append(keyWordArguments.get(field).getDefaultValue());
             template.append(";");
         }
+
         // overwrite defaults when applicable
-        template.append("Class my$Class = this.getClass();");
+        template.append("java.lang.Class my$Class = this.getClass();");
         template.append(
                 "for (int i = 0; i < $1.length; i+=2) {" +
-                        "java.lang.reflect.Field field = my$Class.getDeclaredField((String)$1[i]);" +
+                        "java.lang.reflect.Field field = getField$injected((java.lang.String)$1[i], my$Class);" +
+                        "if (field == null) {" +
+                            "throw new RuntimeException(\"Unrecognized keyword: \" + (java.lang.String)$1[i]);" +
+                        "}" +
                         "field.set(this, $1[i+1]);" +
                 "}");
 
         template.append("}");
-
         constructor.setBody(template.toString());
     }
 

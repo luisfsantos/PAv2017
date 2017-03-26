@@ -2,6 +2,12 @@ package ist.meic.pa;
 
 import javassist.CannotCompileException;
 import javassist.CtClass;
+import org.jgrapht.experimental.dag.DirectedAcyclicGraph;
+import org.jgrapht.graph.DefaultEdge;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import javassist.CtConstructor;
 import javassist.NotFoundException;
 import org.jgrapht.experimental.dag.DirectedAcyclicGraph;
@@ -24,6 +30,10 @@ public final class ParseWrapper {
     private HashMap<String, ValueWrapper> values;
     private final DirectedAcyclicGraph<String, DefaultEdge> dependencies = new DirectedAcyclicGraph<>(DefaultEdge.class);
 
+    KeywordArgs kwAnnotation;
+    CtClass ctClass;
+    HashMap<String, ValueWrapper> values = new HashMap<>();
+    DirectedAcyclicGraph<String, DefaultEdge> dependancies = new DirectedAcyclicGraph<>(DefaultEdge.class);
     private static final Logger logger = Logger.getLogger(ParseWrapper.class.getName());
 
     public ParseWrapper(KeywordArgs keywordArgs, CtClass ctClass) {
