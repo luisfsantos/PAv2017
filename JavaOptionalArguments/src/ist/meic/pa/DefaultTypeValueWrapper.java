@@ -22,11 +22,6 @@ public class DefaultTypeValueWrapper extends ValueWrapper {
 
         CtClass fieldType =  ctClass.getField(fieldName).getType();
 
-       Object defValue = DefaultValues.defaultValueFor(fieldType);
-        if (defValue == null) {
-            defaultValue = null;
-        } else {
-            defaultValue = defValue.toString();
-        }
+        defaultValue = DefaultValues.defaultValueFor(fieldType);
     }
 }
