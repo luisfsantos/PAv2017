@@ -33,6 +33,7 @@ public class ConstructorEditor {
             return;
         }
         keyWordArguments = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass).parse();
+        injectFieldGetter();
         injectDefaultConstructor(keyWordArguments);
         injectCodeAnnotatedConstructor(keyWordArguments);
     }
@@ -52,24 +53,7 @@ public class ConstructorEditor {
         ctClass.addConstructor(newConstructor);
     }
 
-    private void injectCodeAnnotatedConstructor(HashMap<String, ValueWrapper> keyWordArguments) throws CannotCompileException {
-        if (!ctConstructor.isPresent()) {
-            logger.log(Level.SEVERE, "There is no constructor in which to inject code.");
-            return;
-        }
-        CtConstructor constructor = ctConstructor.get();
-        StringBuilder template = new StringBuilder();
-
-
-        template.append("{");
-        // assign default values
-        for (String field : keyWordArguments.keySet()) {
-            template.append(field);
-            template.append("=");
-            template.append(keyWordArguments.get(field).defaultValue);
-            template.append(";");
-        }
-
+    private void injectFieldGetter() throws CannotCompileException {
         // inject auxiliary method - get field from name, including inherited fields
         String auxMethodTemplate = "private java.lang.reflect.Field getField$injected(java.lang.String name, java.lang.Class type) {" +
                 "        do {" +
@@ -83,6 +67,23 @@ public class ConstructorEditor {
                 "    }";
         CtMethod method = CtMethod.make(auxMethodTemplate, ctClass);
         ctClass.addMethod(method);
+    }
+
+    private void injectCodeAnnotatedConstructor(HashMap<String, ValueWrapper> keyWordArguments) throws CannotCompileException {
+        if (!ctConstructor.isPresent()) {
+            logger.log(Level.SEVERE, "There is no constructor in which to inject code.");
+            return;
+        }
+        CtConstructor constructor = ctConstructor.get();
+        StringBuilder template = new StringBuilder();
+        template.append("{");
+        // assign default values
+        for (String field : keyWordArguments.keySet()) {
+            template.append(field);
+            template.append("=");
+            template.append(keyWordArguments.get(field).defaultValue);
+            template.append(";");
+        }
 
         // overwrite defaults when applicable
         template.append("java.lang.Class my$Class = this.getClass();");
@@ -97,8 +98,6 @@ public class ConstructorEditor {
 
         template.append("}");
         constructor.setBody(template.toString());
-
-
     }
 
     public Optional<KeywordArgs> findAnnotation(CtConstructor ctConstructor) throws ClassNotFoundException {
