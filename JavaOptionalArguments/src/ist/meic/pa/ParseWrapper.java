@@ -17,6 +17,8 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import java.util.*;
 
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by lads on 23/03/2017.
@@ -106,7 +108,6 @@ public final class ParseWrapper {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-        //TODO: regex code which also puts in the values all the inherited values from the super classes
         return values;
     }
 
@@ -115,7 +116,9 @@ public final class ParseWrapper {
         kwargs.keySet().forEach(key -> graph.addVertex(key));
         for (Map.Entry<String, String> entry : kwargs.entrySet()) {
             logger.info("Getting dependencies for " + entry.getKey());
-            getDependenciesInValue(kwargs.keySet(), entry.getValue()).forEach(d -> {
+            List<String> dep = getDependenciesInValue(kwargs.keySet(), entry.getValue());
+            logger.info("\t-> Dependencies found: "+ Arrays.toString(dep.toArray()));
+            dep.forEach(d -> {
                 try {
                     graph.addDagEdge(d, entry.getKey());
                 } catch (IllegalArgumentException | DirectedAcyclicGraph.CycleFoundException e) {
@@ -129,16 +132,76 @@ public final class ParseWrapper {
 
     private List<String> getDependenciesInValue(Set<String> keys, String value) {
 
-        LinkedList<String> dependencies = new LinkedList<>();
-        String SIMPLE_PATTERN = "[+*/-]";
-        List<String> operands = Arrays.asList(value.split(SIMPLE_PATTERN));
-        keys.forEach(k -> {
-            if (operands.contains(k)) {
-                logger.info("Inserting " + k + " into dependencies");
-                dependencies.add(k);
+        List<String> dependencies = new LinkedList<>();
+        if (value == null) {
+            return dependencies;
+        }
+
+        final String WORD_PATTERN = "^\\w*$";
+        final String FUNCALL_PATTERN = "^(?<obj>\\w+)(?:[.]\\w+\\((?<param>[^()]*)\\))$";
+        final String ARITHMETIC_PATTERN = "^(?<left>\\(.+?\\)|.+?)[/+*-](?<right>\\(.+\\)|.+)$";
+        Pattern p;
+        Matcher m;
+        value = trimParenthesis(value);
+        logger.info("value after trimming parenthesis: " + value);
+
+        /* 1st case: value is a single word */
+        p = Pattern.compile(WORD_PATTERN);
+        m = p.matcher(value);
+        if (m.find()) {
+            String match = m.group(0);
+            logger.info("Single word match -> " + match);
+            if (keys.contains(match)) {
+                logger.info("Found a dependency: " + match);
+                dependencies.add(match);
             }
-        });
+            return dependencies;
+        }
+
+        /* 2nd case: value is a function call */
+        /* Does NOT support:
+         * 1. function call with any parentheses in param expression e.g. Math.sin(2*(1+2))
+         * 2. chained function calls e.g. Math.sin(0).toString()
+         */
+        p = Pattern.compile(FUNCALL_PATTERN);
+        m = p.matcher(value);
+        if (m.find()) {
+            String obj = m.group("obj");
+            logger.info("Function call match -> Receiver is: " + obj);
+            if (keys.contains(obj)) {
+                logger.info("Found a dependency: " + obj);
+                dependencies.add(obj);
+            }
+            String param = m.group("param").trim();
+            logger.info("Recursive call on matched param: " + param);
+            dependencies.addAll(getDependenciesInValue(keys, param));
+            return dependencies;
+        }
+
+        /* 3rd case: value is an arithmetic expression */
+        String left;
+        String right;
+        p = Pattern.compile(ARITHMETIC_PATTERN);
+        m = p.matcher(value);
+        if (m.find()) {
+            left = m.group("left");
+            right = m.group("right");
+            logger.info("Arithmetic expression match -> left: " + left + "; right: " + right);
+            dependencies.addAll(getDependenciesInValue(keys, left));
+            dependencies.addAll(getDependenciesInValue(keys, right));
+        }
         return dependencies;
+    }
+
+    private static String trimParenthesis(String s) {
+        //language=RegExp
+        final String PATTERN = "^\\((.*?)\\)$";
+        Pattern p = Pattern.compile(PATTERN);
+        Matcher m = p.matcher(s);
+        if (m.find()) {
+            s = m.group(0);
+        }
+        return s;
     }
 
     private HashMap<String, ValueWrapper> wrapValues(HashMap<String, String> kwargs, CtClass clazz) {
