@@ -1,6 +1,7 @@
 package ist.meic.pa;
 
 import ist.meic.pa.utils.SearchClass;
+import javafx.collections.transformation.SortedList;
 import javassist.CannotCompileException;
 import javassist.CtClass;
 import org.jgrapht.experimental.dag.DirectedAcyclicGraph;
@@ -9,16 +10,12 @@ import org.jgrapht.graph.DefaultEdge;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import javassist.CtConstructor;
+
 import javassist.NotFoundException;
-import org.jgrapht.experimental.dag.DirectedAcyclicGraph;
-import org.jgrapht.graph.DefaultEdge;
 
 import java.util.*;
 
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-import java.util.logging.StreamHandler;
 
 /**
  * Created by lads on 23/03/2017.
@@ -29,7 +26,7 @@ public final class ParseWrapper {
     private final String kwArgsStr;
     private CtClass ctClass;
     private HashMap<String, ValueWrapper> values;
-    private final DirectedAcyclicGraph<String, DefaultEdge> dependencies = new DirectedAcyclicGraph<>(DefaultEdge.class);
+    private DirectedAcyclicGraph<String, DefaultEdge> dependencies = new DirectedAcyclicGraph<>(DefaultEdge.class);
     private static final Logger logger = Logger.getLogger(ParseWrapper.class.getName());
 
     public ParseWrapper(KeywordArgs keywordArgs, CtClass ctClass) {
@@ -49,7 +46,7 @@ public final class ParseWrapper {
         try {
             HashMap<String, String> kwargs = Parser.parse(kwArgsStr);
             logger.info("Current class kwargs size = " + kwargs.size());
-
+            logger.info("kwargs = " + Arrays.toString(kwargs.keySet().toArray()));
             // TODO: optimize if there is time
             // Gets all of the keys that have "null" as the value
             Collection<String> nullKeys = filterOutKeysWithNullValue(kwargs);
@@ -100,6 +97,7 @@ public final class ParseWrapper {
             logger.info("# Start looking for inherited kwargs");
 
             // convert HashMap<String, String> to HashMap<String, ValueWrapper>
+            dependencies = checkDependencies(kwargs);
             values = wrapValues(kwargs, ctClass);
             logger.info("Size of wrapped hashmap= " + values.size());
         } catch (NotFoundException e) {
@@ -109,6 +107,27 @@ public final class ParseWrapper {
         }
         //TODO: regex code which also puts in the values all the inherited values from the super classes
         return values;
+    }
+
+    private DirectedAcyclicGraph<String,DefaultEdge> checkDependencies(HashMap<String, String> kwargs) {
+        DirectedAcyclicGraph<String,DefaultEdge> graph = new DirectedAcyclicGraph<>(DefaultEdge.class);
+        for (Map.Entry<String, String> entry : kwargs.entrySet()) {
+            graph.addVertex(entry.getKey());
+            getDependenciesInValue(entry.getValue()).forEach(d -> {
+                try {
+                    graph.addDagEdge(entry.getKey(), d);
+                } catch (DirectedAcyclicGraph.CycleFoundException e) {
+                    logger.severe("Cannot use kwrdargs as they are because some dependencies cannot be resolved");
+                    e.printStackTrace();
+                    throw  new RuntimeException("Cyclic dependencies in KeywordArgs");
+                }
+            });
+        }
+        return graph;
+    }
+
+    private List<String> getDependenciesInValue(String value) {
+        return new LinkedList<>();
     }
 
     private HashMap<String, ValueWrapper> wrapValues(HashMap<String, String> kwargs, CtClass clazz) {
