@@ -112,14 +112,14 @@ public final class ParseWrapper {
 
     private DirectedAcyclicGraph<String,DefaultEdge> checkDependencies(HashMap<String, String> kwargs) {
         DirectedAcyclicGraph<String,DefaultEdge> graph = new DirectedAcyclicGraph<>(DefaultEdge.class);
+        kwargs.keySet().forEach(key -> graph.addVertex(key));
         for (Map.Entry<String, String> entry : kwargs.entrySet()) {
-            graph.addVertex(entry.getKey());
+            logger.info("Getting dependencies for " + entry.getKey());
             getDependenciesInValue(kwargs.keySet(), entry.getValue()).forEach(d -> {
                 try {
-                    graph.addDagEdge(entry.getKey(), d);
-                } catch (DirectedAcyclicGraph.CycleFoundException e) {
+                    graph.addDagEdge(d, entry.getKey());
+                } catch (IllegalArgumentException | DirectedAcyclicGraph.CycleFoundException e) {
                     logger.severe("Cannot use kwrdargs as they are because some dependencies cannot be resolved");
-                    e.printStackTrace();
                     throw  new RuntimeException("Cyclic dependencies in KeywordArgs");
                 }
             });
@@ -134,6 +134,7 @@ public final class ParseWrapper {
         List<String> operands = Arrays.asList(value.split(SIMPLE_PATTERN));
         keys.forEach(k -> {
             if (operands.contains(k)) {
+                logger.info("Inserting " + k + " into dependencies");
                 dependencies.add(k);
             }
         });
