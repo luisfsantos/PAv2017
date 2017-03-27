@@ -1,5 +1,6 @@
 package ist.meic.pa;
 
+import ist.meic.pa.utils.SearchClass;
 import javassist.CannotCompileException;
 import javassist.CtClass;
 import org.jgrapht.experimental.dag.DirectedAcyclicGraph;
@@ -63,7 +64,7 @@ public final class ParseWrapper {
             logger.info("# Start looking for inherited kwargs");
             while(!nullKeysCopy.isEmpty() && !(parent == null)) {
                 logger.info("\tParent class: " + parent.getName());
-                ctorStrOpt  = getKwargsStringFromCtor(parent);
+                ctorStrOpt  = SearchClass.getKwargsStringFromCtor(parent);
                 if (!ctorStrOpt.isPresent()) {
                     // skip loop iteration, KeywordArgs annotation not found in any of the class's constructors
                     logger.info("\t\t-> this class doesn't have an annotated ctor, skipping...");
@@ -142,32 +143,6 @@ public final class ParseWrapper {
         return result;
     }
 
-    private Optional<CtConstructor> getAnnotatedConstructor(CtClass clazz) {
-        CtConstructor[] ctors = clazz.getConstructors();
-        logger.info("# Start cycling through ctors of " + clazz.getName());
-        for (CtConstructor ctor : ctors) {
-            logger.info("\t* current ctor: " + ctor.toString());
-            if (ctor.hasAnnotation(KeywordArgs.class)) {
-                logger.info("\t* " + ctor.toString() + " has KeywordArgs annotation");
-                return Optional.of(ctor);
-            }
-            logger.info("\t* " + ctor.toString() + " does not have KeywordArgs annotation");
-        }
-        logger.info("# Start cycling through ctors of " + clazz.getName());
-
-        return Optional.empty();
-    }
-
-    private Optional<String> getKwargsStringFromCtor(CtClass clazz) throws ClassNotFoundException {
-        Optional<CtConstructor> ctor = getAnnotatedConstructor(clazz);
-        if (ctor.isPresent()) {
-            CtConstructor annotatedCtor = ctor.get();
-            KeywordArgs kwargsAnnotation = (KeywordArgs) annotatedCtor.getAnnotation(KeywordArgs.class);
-            String kwargsStr = kwargsAnnotation.value();
-            return Optional.of(kwargsStr);
-        }
-        return Optional.empty();
-    }
 
     public List<String> getSortedParameters() {
         return new LinkedList<>();

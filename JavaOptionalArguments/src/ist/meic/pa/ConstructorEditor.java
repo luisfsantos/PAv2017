@@ -1,5 +1,6 @@
 package ist.meic.pa;
 
+import ist.meic.pa.utils.SearchClass;
 import javassist.*;
 
 import java.util.Arrays;
@@ -101,39 +102,11 @@ public class ConstructorEditor {
         constructor.setBody(template.toString());
     }
 
-    public Optional<KeywordArgs> findAnnotation(CtConstructor ctConstructor) throws ClassNotFoundException {
-        Object[] annotations = ctConstructor.getAnnotations();
-        for (Object annotation: annotations) {
-            if (annotation instanceof KeywordArgs) {
-                return Optional.of((KeywordArgs) annotation);
-            }
-        }
-        logger.log(Level.INFO,"The constructor " + ctConstructor.getLongName() + " does not have an annotation");
-        return Optional.empty();
-    }
-
-    public boolean hasAnnotation(CtConstructor ctConstructor) {
-        try {
-            return findAnnotation(ctConstructor).isPresent();
-        } catch (ClassNotFoundException e) {
-            logger.log(Level.SEVERE, e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    public Optional<CtConstructor> findEditableConstructor() throws NotFoundException, ClassNotFoundException {
-        Stream<CtConstructor> constructors = Arrays.stream(ctClass.getConstructors());
-        return constructors.filter(c -> hasAnnotation(c))
-                .peek(c -> logger.log(Level.INFO, "Constructor " + c.getLongName() + " found with correct annotation"))
-                .findFirst();
-    }
-
     public boolean isEditable() throws NotFoundException, ClassNotFoundException {
         if (ctConstructor.isPresent()) {
             return true;
         } else {
-            ctConstructor = findEditableConstructor();
+            ctConstructor = SearchClass.getAnnotatedConstructor(ctClass);
             return ctConstructor.isPresent();
         }
     }
