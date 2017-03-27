@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import javassist.NotFoundException;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.*;
 
@@ -164,7 +165,12 @@ public final class ParseWrapper {
 
 
     public List<String> getSortedParameters() {
-        return new LinkedList<>();
+        TopologicalOrderIterator<String, DefaultEdge> topologicalSort = new TopologicalOrderIterator<>(dependencies);
+        LinkedList<String> sortedList = new LinkedList<>();
+        while (topologicalSort.hasNext()) {
+            sortedList.add(topologicalSort.next());
+        }
+        return sortedList;
     }
 
 

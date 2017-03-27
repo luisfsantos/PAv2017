@@ -3,9 +3,7 @@ package ist.meic.pa;
 import ist.meic.pa.utils.SearchClass;
 import javassist.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -19,6 +17,7 @@ public class ConstructorEditor {
     CtClass ctClass;
     Optional<CtConstructor> ctConstructor = Optional.empty();
     HashMap<String, ValueWrapper> keyWordArguments;
+    List<String> sortedParameters;
     String name;
     static final String GLOBAL_SETTER = "global$setter";
 
@@ -34,7 +33,9 @@ public class ConstructorEditor {
             logger.log(Level.WARNING, "Not in a position to edit a constructor.");
             return;
         }
-        keyWordArguments = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass).parse();
+        ParseWrapper parser = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass);
+        keyWordArguments = parser.parse();
+        sortedParameters = parser.getSortedParameters();
         injectFieldGetter();
         injectDefaultConstructor(keyWordArguments);
         injectCodeAnnotatedConstructor(keyWordArguments);
@@ -43,7 +44,7 @@ public class ConstructorEditor {
     private void injectDefaultConstructor(HashMap<String, ValueWrapper> keyWordArguments) throws CannotCompileException {
         StringBuilder defaultConstructor = new StringBuilder();
         defaultConstructor.append("public " + ctClass.getName() + "() {");
-        for (String field : keyWordArguments.keySet()) {
+        for (String field : sortedParameters) {
             defaultConstructor.append(field);
             defaultConstructor.append("=");
             defaultConstructor.append(keyWordArguments.get(field).getDefaultValue());
@@ -80,7 +81,7 @@ public class ConstructorEditor {
         StringBuilder template = new StringBuilder();
         template.append("{");
         // assign default values
-        for (String field : keyWordArguments.keySet()) {
+        for (String field : sortedParameters) {
             template.append(field);
             template.append("=");
             template.append(keyWordArguments.get(field).getDefaultValue());
