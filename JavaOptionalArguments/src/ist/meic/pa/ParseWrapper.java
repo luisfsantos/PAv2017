@@ -113,7 +113,7 @@ public final class ParseWrapper {
         DirectedAcyclicGraph<String,DefaultEdge> graph = new DirectedAcyclicGraph<>(DefaultEdge.class);
         for (Map.Entry<String, String> entry : kwargs.entrySet()) {
             graph.addVertex(entry.getKey());
-            getDependenciesInValue(entry.getValue()).forEach(d -> {
+            getDependenciesInValue(kwargs.keySet(), entry.getValue()).forEach(d -> {
                 try {
                     graph.addDagEdge(entry.getKey(), d);
                 } catch (DirectedAcyclicGraph.CycleFoundException e) {
@@ -126,8 +126,17 @@ public final class ParseWrapper {
         return graph;
     }
 
-    private List<String> getDependenciesInValue(String value) {
-        return new LinkedList<>();
+    private List<String> getDependenciesInValue(Set<String> keys, String value) {
+
+        LinkedList<String> dependencies = new LinkedList<>();
+        String SIMPLE_PATTERN = "[+*/-]";
+        List<String> operands = Arrays.asList(value.split(SIMPLE_PATTERN));
+        keys.forEach(k -> {
+            if (operands.contains(k)) {
+                dependencies.add(k);
+            }
+        });
+        return dependencies;
     }
 
     private HashMap<String, ValueWrapper> wrapValues(HashMap<String, String> kwargs, CtClass clazz) {
