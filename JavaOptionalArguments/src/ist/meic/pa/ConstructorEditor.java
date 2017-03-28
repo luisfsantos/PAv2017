@@ -33,7 +33,7 @@ public class ConstructorEditor {
         }
         ParseWrapper keywordArgumentsParser = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass);
         keyWordArguments = keywordArgumentsParser.parse();
-        sortedParameters = keywordArgumentsParser.getSortedParameters();
+        sortedParameters = keywordArgumentsParser.getSortedParameters(new HashSet<>(keyWordArguments.keySet()));
         injectFieldGetter();
         injectDefaultParameters();
         injectUpdater();

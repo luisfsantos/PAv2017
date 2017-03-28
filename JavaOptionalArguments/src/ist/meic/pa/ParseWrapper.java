@@ -243,12 +243,12 @@ public final class ParseWrapper {
     }
 
 
-    public List<String> getSortedParameters(HashMap<String, ValueWrapper> myParameters) {
+    public List<String> getSortedParameters(HashSet<String> myParameters) {
         TopologicalOrderIterator<String, DefaultEdge> topologicalSort = new TopologicalOrderIterator<>(dependencies);
         LinkedList<String> sortedList = new LinkedList<>();
         while (topologicalSort.hasNext()) {
             String vertex = topologicalSort.next();
-            if(myParameters.containsKey(vertex)) {
+            if(myParameters.contains(vertex)) {
                 sortedList.add(vertex);
             }
 
