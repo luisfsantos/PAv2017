@@ -95,7 +95,7 @@ public class ConstructorEditor {
                             "throw new RuntimeException(\"Unrecognized keyword: \" + (java.lang.String)$1[i]);" +
                         "}" +
                         "field.set(this, $1[i+1]);" +
-                        "getField$injected((java.lang.String)$1[i] + \""+ DEFAULT + "\", my$Class).setBoolean(this, false);" +
+                        "getField$injected((java.lang.String)$1[i] + \""+ DEFAULT + "\").setBoolean(this, false);" +
                         "}");
         template.append("update$all();");
         template.append("}");
