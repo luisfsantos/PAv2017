@@ -199,7 +199,7 @@ public final class ParseWrapper {
         Pattern p = Pattern.compile(PATTERN);
         Matcher m = p.matcher(s);
         if (m.find()) {
-            s = m.group(0);
+            s = m.group(1);
         }
         return s;
     }
