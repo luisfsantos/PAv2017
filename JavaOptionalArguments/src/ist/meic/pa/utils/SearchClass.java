@@ -1,21 +1,14 @@
 package ist.meic.pa.utils;
 
-import ist.meic.pa.ConstructorEditor;
+
 import ist.meic.pa.KeywordArgs;
 import javassist.CtClass;
 import javassist.CtConstructor;
-import javassist.Loader;
-import javassist.NotFoundException;
 
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
-/**
- * Created by lads on 27/03/2017.
- */
+
 public class SearchClass {
 
     private final static Logger logger = Logger.getLogger(SearchClass.class.getName());

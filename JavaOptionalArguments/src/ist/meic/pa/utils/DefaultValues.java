@@ -1,7 +1,6 @@
 package ist.meic.pa.utils;
 
 import javassist.CtClass;
-import javassist.CtConstructor;
 import javassist.CtPrimitiveType;
 
 import java.util.HashMap;

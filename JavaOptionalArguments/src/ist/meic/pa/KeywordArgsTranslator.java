@@ -2,14 +2,9 @@ package ist.meic.pa;
 
 import javassist.*;
 
-import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
-/**
- * Created by lads on 22/03/2017.
- */
 public class KeywordArgsTranslator implements Translator {
 
     private final static Logger logger = Logger.getLogger(KeywordArgsTranslator.class.getName());
