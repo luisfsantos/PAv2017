@@ -129,7 +129,7 @@ public class ConstructorEditor {
                 updater.append("super.update$all();");
             }
         } catch (NotFoundException e) {
-
+            logger.info("There is no SuperClass to load!");
         } finally {
             sortedFields.stream().forEach(s -> updater.append("if (" + s + DEFAULT + ") {" +
                     s + " = " + keyWordArguments.get(s) + ";" +
