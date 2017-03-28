@@ -35,7 +35,7 @@ public class ConstructorEditor {
         }
         ParseWrapper parser = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass);
         keyWordArguments = parser.parse();
-        sortedParameters = parser.getSortedParameters();
+        sortedParameters = parser.getSortedParameters(keyWordArguments);
         injectFieldGetter();
         injectDefaultConstructor(keyWordArguments);
         injectCodeAnnotatedConstructor(keyWordArguments);
@@ -51,7 +51,7 @@ public class ConstructorEditor {
             defaultConstructor.append(";");
         }
         defaultConstructor.append(" }");
-        logger.log(Level.INFO, "The default constructor looks like this: " + defaultConstructor.toString());
+        logger.log(Level.INFO, "The default constructor is: " + defaultConstructor.toString());
         CtConstructor newConstructor = new CtNewConstructor().make(defaultConstructor.toString(), ctClass);
         ctClass.addConstructor(newConstructor);
     }
