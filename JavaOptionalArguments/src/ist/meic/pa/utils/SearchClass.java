@@ -30,7 +30,7 @@ public class SearchClass {
             }
             logger.info("\t* " + ctor.toString() + " does not have KeywordArgs annotation");
         }
-        logger.info("# Start cycling through ctors of " + clazz.getName());
+        logger.info("# Stop cycling through ctors of " + clazz.getName());
 
         return Optional.empty();
     }
@@ -41,6 +41,7 @@ public class SearchClass {
             CtConstructor annotatedCtor = ctor.get();
             KeywordArgs kwargsAnnotation = (KeywordArgs) annotatedCtor.getAnnotation(KeywordArgs.class);
             String kwargsStr = kwargsAnnotation.value();
+            logger.info("Annotation for " + clazz.getName() + " " + kwargsStr);
             return Optional.of(kwargsStr);
         }
         return Optional.empty();

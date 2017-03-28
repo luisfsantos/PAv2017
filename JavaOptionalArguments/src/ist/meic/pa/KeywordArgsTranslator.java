@@ -30,7 +30,7 @@ public class KeywordArgsTranslator implements Translator {
                 logger.log(Level.INFO, "The class " + s + " does not need to be edited.");
             }
         } catch (ClassNotFoundException e) {
-            logger.log(Level.WARNING, "onLoad getAnnotations failed for reason: " + e.getLocalizedMessage());
+            logger.log(Level.WARNING, "failed for reason: " + e.getLocalizedMessage());
         }
     }
 }

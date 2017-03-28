@@ -103,7 +103,7 @@ public final class ParseWrapper {
                 }
                 parent = parent.getSuperclass();
             }
-            logger.info("# Start looking for inherited kwargs");
+            logger.info("# Stop looking for inherited kwargs");
 
             // convert HashMap<String, String> to HashMap<String, ValueWrapper>
             dependencies = checkDependencies(allKwargs);
