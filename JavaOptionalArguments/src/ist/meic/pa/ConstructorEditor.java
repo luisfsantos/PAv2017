@@ -58,7 +58,8 @@ public class ConstructorEditor {
 
     private void injectFieldGetter() throws CannotCompileException {
         // inject auxiliary method - get field from name, including inherited fields
-        String auxMethodTemplate = "private java.lang.reflect.Field getField$injected(java.lang.String name, java.lang.Class type) {" +
+        String auxMethodTemplate = "private java.lang.reflect.Field getField$injected(java.lang.String name) {" +
+                "        java.lang.Class type = this.getClass();" +
                 "        do {" +
                 "            try {" +
                 "                return type.getDeclaredField(name);" +
@@ -89,10 +90,9 @@ public class ConstructorEditor {
         }
 
         // overwrite defaults when applicable
-        template.append("java.lang.Class my$Class = this.getClass();");
         template.append(
                 "for (int i = 0; i < $1.length; i+=2) {" +
-                        "java.lang.reflect.Field field = getField$injected((java.lang.String)$1[i], my$Class);" +
+                        "java.lang.reflect.Field field = getField$injected((java.lang.String)$1[i]);" +
                         "if (field == null) {" +
                             "throw new RuntimeException(\"Unrecognized keyword: \" + (java.lang.String)$1[i]);" +
                         "}" +
