@@ -1,5 +1,7 @@
 package ist.meic.pa;
 
+import ist.meic.pa.parsing.ParseWrapper;
+import ist.meic.pa.parsing.ValueWrapper;
 import ist.meic.pa.utils.SearchClass;
 import javassist.*;
 
@@ -7,14 +9,11 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by lads on 23/03/2017.
- */
 public class ConstructorEditor {
 
     CtClass ctClass;
     Optional<CtConstructor> ctConstructor = Optional.empty();
-    HashMap<String, ValueWrapper> keyWordArguments;
+    HashMap<String, ValueWrapper> fieldValueMap;
     List<String> sortedFields;
     String name;
     static final String DEFAULT = "$default";
@@ -32,9 +31,10 @@ public class ConstructorEditor {
             logger.warning( "Not in a position to edit " + ctClass.getName());
             return;
         }
-        ParseWrapper keywordArgumentsParser = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass);
-        keyWordArguments = keywordArgumentsParser.parse();
-        sortedFields = keywordArgumentsParser.getSortedParameters(new HashSet<>(keyWordArguments.keySet()));
+        String kwArgsString = ((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class)).value();
+        ParseWrapper keywordArgumentsParser = new ParseWrapper(kwArgsString, ctClass);
+        fieldValueMap = keywordArgumentsParser.parse();
+        sortedFields = keywordArgumentsParser.getSortedFields();
         injectFieldGetter();
         injectDefaultFields();
         injectUpdater();
@@ -59,12 +59,17 @@ public class ConstructorEditor {
             defaultConstructor = ctClass.getDeclaredConstructor(new CtClass[0]);
             defaultConstructor.insertBeforeBody("update$all();");
         } catch (NotFoundException e) {
+
             logger.info(e.getMessage());
+
             StringBuilder constructorBuilder = new StringBuilder();
+
             constructorBuilder.append("public " + ctClass.getName() + "() {");
             constructorBuilder.append("update$all();");
             constructorBuilder.append(" }");
+
             logger.log(Level.INFO, "The default constructor is: " + constructorBuilder.toString());
+
             defaultConstructor = new CtNewConstructor().make(constructorBuilder.toString(), ctClass);
             ctClass.addConstructor(defaultConstructor);
         }
@@ -94,10 +99,14 @@ public class ConstructorEditor {
             return;
         }
         CtConstructor constructor = ctConstructor.get();
-        StringBuilder template = new StringBuilder();
-        template.append("{");
-        // overwrite defaults when applicable
-        template.append(
+        StringBuilder constructorBuilder = new StringBuilder();
+        constructorBuilder.append("{");
+        Object[] ola;
+        constructorBuilder.append("if (($1.length%2) != 0) {" +
+                "throw new RuntimeException(\"Odd number of parameters (\" + $1.length + \") in constructor,  expected even.\");" +
+                "}");
+
+        constructorBuilder.append(
                 "for (int i = 0; i < $1.length; i+=2) {" +
                         "java.lang.reflect.Field field = "+ GET_FIELD + "((java.lang.String)$1[i]);" +
                         "if (field == null) {" +
@@ -107,9 +116,9 @@ public class ConstructorEditor {
                         GET_FIELD + "((java.lang.String)$1[i] + \""+ DEFAULT + "\").setBoolean(this, false);" +
                         "}");
 
-        template.append("update$all();");
-        template.append("}");
-        constructor.setBody(template.toString());
+        constructorBuilder.append("update$all();");
+        constructorBuilder.append("}");
+        constructor.setBody(constructorBuilder.toString());
     }
 
     private void injectUpdater() throws CannotCompileException, ClassNotFoundException {
@@ -132,7 +141,7 @@ public class ConstructorEditor {
             logger.info("There is no SuperClass to load!");
         } finally {
             sortedFields.stream().forEach(s -> updater.append("if (" + s + DEFAULT + ") {" +
-                    s + " = " + keyWordArguments.get(s) + ";" +
+                    s + " = " + fieldValueMap.get(s) + ";" +
                     "}"));
             updater.append("}");
         }
@@ -149,6 +158,7 @@ public class ConstructorEditor {
                     ctClass.addField(CtField.make("protected boolean " + s + DEFAULT + " = true;", ctClass));
                 }
             } catch (NotFoundException e) {
+                logger.info(s + " is no a field of " + ctClass.getName() + " must belong to a super.");
             }
         }
     }

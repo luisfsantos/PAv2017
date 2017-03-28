@@ -1,4 +1,4 @@
-package ist.meic.pa;
+package ist.meic.pa.parsing;
 
 import java.util.HashMap;
 import java.util.regex.Matcher;
