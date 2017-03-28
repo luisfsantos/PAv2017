@@ -3,7 +3,7 @@ import ist.meic.pa.KeywordArgs;
 class DependencyChildWidget extends DependencyWidget {
 	double d;
 
-	@KeywordArgs("d=b")
+	@KeywordArgs("a=c,c=d,d")
 	public DependencyChildWidget(Object... args) {}
 
 	public String toString() {
