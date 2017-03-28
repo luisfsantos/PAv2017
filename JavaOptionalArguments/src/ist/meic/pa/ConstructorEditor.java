@@ -18,6 +18,7 @@ public class ConstructorEditor {
     List<String> sortedParameters;
     String name;
     static final String DEFAULT = "$default";
+    static final String GET_FIELD = "get$Field";
 
     private final static Logger logger = Logger.getLogger(ConstructorEditor.class.getName());
 
@@ -52,18 +53,26 @@ public class ConstructorEditor {
     }
 
     private void injectDefaultConstructor() throws CannotCompileException {
-        StringBuilder defaultConstructor = new StringBuilder();
-        defaultConstructor.append("public " + ctClass.getName() + "() {");
-        defaultConstructor.append("update$all();");
-        defaultConstructor.append(" }");
-        logger.log(Level.INFO, "The default constructor is: " + defaultConstructor.toString());
-        CtConstructor newConstructor = new CtNewConstructor().make(defaultConstructor.toString(), ctClass);
-        ctClass.addConstructor(newConstructor);
+        CtConstructor defaultConstructor;
+        try {
+            defaultConstructor = ctClass.getDeclaredConstructor(new CtClass[0]);
+            defaultConstructor.insertBeforeBody("update$all();");
+        } catch (NotFoundException e) {
+            logger.info(e.getMessage());
+            StringBuilder constructorBuilder = new StringBuilder();
+            constructorBuilder.append("public " + ctClass.getName() + "() {");
+            constructorBuilder.append("update$all();");
+            constructorBuilder.append(" }");
+            logger.log(Level.INFO, "The default constructor is: " + constructorBuilder.toString());
+            CtConstructor newConstructor = new CtNewConstructor().make(constructorBuilder.toString(), ctClass);
+            ctClass.addConstructor(newConstructor);
+        }
+
     }
 
     private void injectFieldGetter() throws CannotCompileException {
         // inject auxiliary method - get field from name, including inherited fields
-        String auxMethodTemplate = "private java.lang.reflect.Field getField$injected(java.lang.String name) {" +
+        String auxMethodTemplate = "private java.lang.reflect.Field "+ GET_FIELD +"(java.lang.String name) {" +
                 "        java.lang.Class type = this.getClass();" +
                 "        do {" +
                 "            try {" +
@@ -86,17 +95,17 @@ public class ConstructorEditor {
         CtConstructor constructor = ctConstructor.get();
         StringBuilder template = new StringBuilder();
         template.append("{");
-
         // overwrite defaults when applicable
         template.append(
                 "for (int i = 0; i < $1.length; i+=2) {" +
-                        "java.lang.reflect.Field field = getField$injected((java.lang.String)$1[i]);" +
+                        "java.lang.reflect.Field field = "+ GET_FIELD + "((java.lang.String)$1[i]);" +
                         "if (field == null) {" +
                             "throw new RuntimeException(\"Unrecognized keyword: \" + (java.lang.String)$1[i]);" +
                         "}" +
                         "field.set(this, $1[i+1]);" +
-                        "getField$injected((java.lang.String)$1[i] + \""+ DEFAULT + "\").setBoolean(this, false);" +
+                        GET_FIELD + "((java.lang.String)$1[i] + \""+ DEFAULT + "\").setBoolean(this, false);" +
                         "}");
+
         template.append("update$all();");
         template.append("}");
         constructor.setBody(template.toString());
@@ -117,7 +126,7 @@ public class ConstructorEditor {
         } finally {
             sortedParameters.stream().forEach(s -> updater.append("if (" + s + DEFAULT + ") {" +
                     s + " = " + keyWordArguments.get(s) + ";" +
-                    "} "));
+                    "}"));
             updater.append("}");
         }
         logger.info("Updater method is: " + updater.toString());
@@ -129,7 +138,7 @@ public class ConstructorEditor {
         for (String s: sortedParameters) {
             try {
                 if(ctClass.getDeclaredField(s) != null) {
-                    ctClass.addField(CtField.make("protected boolean " + s + DEFAULT + "=true;", ctClass));
+                    ctClass.addField(CtField.make("protected boolean " + s + DEFAULT + " = true;", ctClass));
                 }
             } catch (NotFoundException e) {
             }
