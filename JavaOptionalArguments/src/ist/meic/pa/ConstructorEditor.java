@@ -15,7 +15,7 @@ public class ConstructorEditor {
     CtClass ctClass;
     Optional<CtConstructor> ctConstructor = Optional.empty();
     HashMap<String, ValueWrapper> keyWordArguments;
-    List<String> sortedParameters;
+    List<String> sortedFields;
     String name;
     static final String DEFAULT = "$default";
     static final String GET_FIELD = "get$Field";
@@ -28,18 +28,19 @@ public class ConstructorEditor {
 
     public void run() throws ClassNotFoundException, CannotCompileException, NotFoundException {
         logger.log(Level.INFO,"Editing " + ctClass.getName() + " to fix constructor");
-        if (!isEditable()) {
-            logger.warning( "Not in a position to edit constructor of " + ctClass.getName());
+        if (!isEditable() || ctClass.isFrozen()) {
+            logger.warning( "Not in a position to edit " + ctClass.getName());
             return;
         }
         ParseWrapper keywordArgumentsParser = new ParseWrapper((KeywordArgs) ctConstructor.get().getAnnotation(KeywordArgs.class), ctClass);
         keyWordArguments = keywordArgumentsParser.parse();
-        sortedParameters = keywordArgumentsParser.getSortedParameters(new HashSet<>(keyWordArguments.keySet()));
+        sortedFields = keywordArgumentsParser.getSortedParameters(new HashSet<>(keyWordArguments.keySet()));
         injectFieldGetter();
-        injectDefaultParameters();
+        injectDefaultFields();
         injectUpdater();
         injectDefaultConstructor();
         injectCodeAnnotatedConstructor();
+        ctClass.freeze();
     }
 
 
@@ -111,7 +112,7 @@ public class ConstructorEditor {
         constructor.setBody(template.toString());
     }
 
-    private void injectUpdater() throws CannotCompileException {
+    private void injectUpdater() throws CannotCompileException, ClassNotFoundException {
         StringBuilder updater = new StringBuilder();
 
         updater.append("public void update$all() { ");
@@ -119,12 +120,18 @@ public class ConstructorEditor {
         try {
             superClass = ctClass.getSuperclass();
             if(SearchClass.getAnnotatedConstructor(superClass).isPresent()) {
+                logger.info("Found SuperClass with KeywordArgs annotation.");
+                logger.info("# Start loading " + superClass.getName());
+                Loader loader = new Loader(ClassPool.getDefault());
+                loader.addTranslator(ClassPool.getDefault(), new KeywordArgsTranslator());
+                loader.loadClass(superClass.getName());
+                logger.info("# Stop loading " + superClass.getName());
                 updater.append("super.update$all();");
             }
         } catch (NotFoundException e) {
 
         } finally {
-            sortedParameters.stream().forEach(s -> updater.append("if (" + s + DEFAULT + ") {" +
+            sortedFields.stream().forEach(s -> updater.append("if (" + s + DEFAULT + ") {" +
                     s + " = " + keyWordArguments.get(s) + ";" +
                     "}"));
             updater.append("}");
@@ -134,10 +141,11 @@ public class ConstructorEditor {
     }
 
 
-    private void injectDefaultParameters() throws CannotCompileException {
-        for (String s: sortedParameters) {
+    private void injectDefaultFields() throws CannotCompileException {
+        for (String s: sortedFields) {
             try {
                 if(ctClass.getDeclaredField(s) != null) {
+                    logger.info("Injecting field: " + s + DEFAULT);
                     ctClass.addField(CtField.make("protected boolean " + s + DEFAULT + " = true;", ctClass));
                 }
             } catch (NotFoundException e) {

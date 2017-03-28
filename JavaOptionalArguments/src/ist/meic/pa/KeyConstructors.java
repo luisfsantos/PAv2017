@@ -30,8 +30,8 @@ final public class KeyConstructors {
 
             Translator kwargsTranslator = new KeywordArgsTranslator();
             ClassPool pool = ClassPool.getDefault();
-
             Loader loader = new Loader();
+
             pool.appendClassPath(workDir); // add current dir to classpath
             loader.addTranslator(pool, kwargsTranslator);
             loader.loadClass(classToRun);

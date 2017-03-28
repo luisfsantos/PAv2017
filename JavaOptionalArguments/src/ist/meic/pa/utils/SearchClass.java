@@ -4,6 +4,7 @@ import ist.meic.pa.ConstructorEditor;
 import ist.meic.pa.KeywordArgs;
 import javassist.CtClass;
 import javassist.CtConstructor;
+import javassist.Loader;
 import javassist.NotFoundException;
 
 import java.util.Arrays;
