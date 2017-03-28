@@ -2,6 +2,8 @@ package ist.meic.pa;
 
 import static org.junit.Assert.*;
 
+import ist.meic.pa.parsing.ParseWrapper;
+import ist.meic.pa.parsing.Parser;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -1,42 +1,33 @@
-package ist.meic.pa;
+package ist.meic.pa.parsing;
 
-import ist.meic.pa.utils.DefaultValues;
 import ist.meic.pa.utils.SearchClass;
-import javafx.collections.transformation.SortedList;
 import javassist.CannotCompileException;
 import javassist.CtClass;
-import org.jgrapht.experimental.dag.DirectedAcyclicGraph;
-import org.jgrapht.graph.DefaultEdge;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 
 import javassist.NotFoundException;
-import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.*;
 
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-/**
- * Created by lads on 23/03/2017.
- */
 public final class ParseWrapper {
 
-    private KeywordArgs kwAnnotation;
+    private static final Logger logger = Logger.getLogger(ParseWrapper.class.getName());
+
     private final String kwArgsStr;
     private CtClass ctClass;
     private HashMap<String, ValueWrapper> values;
-    private DirectedAcyclicGraph<String, DefaultEdge> dependencies = new DirectedAcyclicGraph<>(DefaultEdge.class);
-    private static final Logger logger = Logger.getLogger(ParseWrapper.class.getName());
+    private List<String> sortedFields;
 
-    public ParseWrapper(KeywordArgs keywordArgs, CtClass ctClass) {
-        kwAnnotation = keywordArgs;
-        kwArgsStr = keywordArgs.value();
+    public ParseWrapper(String kwArgsStr, CtClass ctClass) {
+        this.kwArgsStr = kwArgsStr;
         this.ctClass = ctClass;
+    }
+
+    public List<String> getSortedFields() {
+        return sortedFields;
     }
 
     public HashMap<String, ValueWrapper> parse() {
@@ -105,8 +96,12 @@ public final class ParseWrapper {
             }
             logger.info("# Stop looking for inherited kwargs");
 
+            // Evaluate dependencies
+            DependencyEvaluator evaluator = new DependencyEvaluator(allKwargs);
+            evaluator.checkDependencies();
+            sortedFields = evaluator.getSortedFields(new HashSet<>(kwargs.keySet()));
+
             // convert HashMap<String, String> to HashMap<String, ValueWrapper>
-            dependencies = checkDependencies(allKwargs);
             values = wrapValues(kwargs, ctClass);
             logger.info("Size of wrapped hashmap= " + values.size());
         } catch (NotFoundException e) {
@@ -115,99 +110,6 @@ public final class ParseWrapper {
             e.printStackTrace();
         }
         return values;
-    }
-
-    private DirectedAcyclicGraph<String,DefaultEdge> checkDependencies(HashMap<String, String> allKwargs) {
-        DirectedAcyclicGraph<String,DefaultEdge> graph = new DirectedAcyclicGraph<>(DefaultEdge.class);
-        allKwargs.keySet().forEach(key -> graph.addVertex(key));
-        for (Map.Entry<String, String> entry : allKwargs.entrySet()) {
-            logger.info("Getting dependencies for " + entry.getKey());
-            List<String> dep = getDependenciesInValue(allKwargs.keySet(), entry.getValue());
-            logger.info("\t-> Dependencies found: "+ Arrays.toString(dep.toArray()));
-            dep.forEach(d -> {
-                try {
-                    graph.addDagEdge(d, entry.getKey());
-                } catch (IllegalArgumentException | DirectedAcyclicGraph.CycleFoundException e) {
-                    logger.severe("Cannot use kwrdargs as they are because some dependencies cannot be resolved");
-                    throw  new RuntimeException("Cyclic dependencies in KeywordArgs");
-                }
-            });
-        }
-        return graph;
-    }
-
-    private List<String> getDependenciesInValue(Set<String> keys, String value) {
-
-        List<String> dependencies = new LinkedList<>();
-        if (value == null) {
-            return dependencies;
-        }
-
-        final String WORD_PATTERN = "^\\w*$";
-        final String FUNCALL_PATTERN = "^(?<obj>\\w+)(?:[.]\\w+\\((?<param>[^()]*)\\))$";
-        final String ARITHMETIC_PATTERN = "^(?<left>\\(.+?\\)|.+?)[/+*-](?<right>\\(.+\\)|.+)$";
-        Pattern p;
-        Matcher m;
-        value = trimParenthesis(value);
-        logger.info("value after trimming parenthesis: " + value);
-
-        /* 1st case: value is a single word */
-        p = Pattern.compile(WORD_PATTERN);
-        m = p.matcher(value);
-        if (m.find()) {
-            String match = m.group(0);
-            logger.info("Single word match -> " + match);
-            if (keys.contains(match)) {
-                logger.info("Found a dependency: " + match);
-                dependencies.add(match);
-            }
-            return dependencies;
-        }
-
-        /* 2nd case: value is a function call */
-        /* Does NOT support:
-         * 1. function call with any parentheses in param expression e.g. Math.sin(2*(1+2))
-         * 2. chained function calls e.g. Math.sin(0).toString()
-         */
-        p = Pattern.compile(FUNCALL_PATTERN);
-        m = p.matcher(value);
-        if (m.find()) {
-            String obj = m.group("obj");
-            logger.info("Function call match -> Receiver is: " + obj);
-            if (keys.contains(obj)) {
-                logger.info("Found a dependency: " + obj);
-                dependencies.add(obj);
-            }
-            String param = m.group("param").trim();
-            logger.info("Recursive call on matched param: " + param);
-            dependencies.addAll(getDependenciesInValue(keys, param));
-            return dependencies;
-        }
-
-        /* 3rd case: value is an arithmetic expression */
-        String left;
-        String right;
-        p = Pattern.compile(ARITHMETIC_PATTERN);
-        m = p.matcher(value);
-        if (m.find()) {
-            left = m.group("left");
-            right = m.group("right");
-            logger.info("Arithmetic expression match -> left: " + left + "; right: " + right);
-            dependencies.addAll(getDependenciesInValue(keys, left));
-            dependencies.addAll(getDependenciesInValue(keys, right));
-        }
-        return dependencies;
-    }
-
-    private static String trimParenthesis(String s) {
-        //language=RegExp
-        final String PATTERN = "^\\((.*?)\\)$";
-        Pattern p = Pattern.compile(PATTERN);
-        Matcher m = p.matcher(s);
-        if (m.find()) {
-            s = m.group(1);
-        }
-        return s;
     }
 
     private HashMap<String, ValueWrapper> wrapValues(HashMap<String, String> kwargs, CtClass clazz) {
@@ -240,20 +142,6 @@ public final class ParseWrapper {
             }
         }
         return result;
-    }
-
-
-    public List<String> getSortedParameters(HashSet<String> myParameters) {
-        TopologicalOrderIterator<String, DefaultEdge> topologicalSort = new TopologicalOrderIterator<>(dependencies);
-        LinkedList<String> sortedList = new LinkedList<>();
-        while (topologicalSort.hasNext()) {
-            String vertex = topologicalSort.next();
-            if(myParameters.contains(vertex)) {
-                sortedList.add(vertex);
-            }
-
-        }
-        return sortedList;
     }
 
 

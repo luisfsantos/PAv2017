@@ -1,13 +1,9 @@
-package ist.meic.pa;
+package ist.meic.pa.parsing;
 
 import java.util.Comparator;
 
-/**
- * Created by lads on 23/03/2017.
- */
 public class ValueWrapper implements Comparator<ValueWrapper> {
-    // This is so we can keep extra info about the arguments if we will need it while working
-    // right now I could only identify the value
+    // This is so we can keep extra info about the DefaultValues
     String defaultValue;
 
     public ValueWrapper(String defaultValue) {

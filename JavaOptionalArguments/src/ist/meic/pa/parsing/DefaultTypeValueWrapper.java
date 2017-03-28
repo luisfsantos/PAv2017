@@ -1,4 +1,4 @@
-package ist.meic.pa;
+package ist.meic.pa.parsing;
 
 import ist.meic.pa.utils.DefaultValues;
 import javassist.CannotCompileException;

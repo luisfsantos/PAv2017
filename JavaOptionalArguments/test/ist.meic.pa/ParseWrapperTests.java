@@ -2,6 +2,8 @@ package ist.meic.pa;
 
 import static org.junit.Assert.*;
 
+import ist.meic.pa.parsing.ParseWrapper;
+import ist.meic.pa.parsing.ValueWrapper;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
