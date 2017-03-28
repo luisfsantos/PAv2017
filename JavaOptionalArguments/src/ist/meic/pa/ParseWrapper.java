@@ -1,5 +1,6 @@
 package ist.meic.pa;
 
+import ist.meic.pa.utils.DefaultValues;
 import ist.meic.pa.utils.SearchClass;
 import javafx.collections.transformation.SortedList;
 import javassist.CannotCompileException;
@@ -47,7 +48,11 @@ public final class ParseWrapper {
          * Optimization: repeat this only until all of the values that are null have been assigned a value.
          */
         try {
+            HashMap<String, String> allKwargs = new HashMap<>();
+
             HashMap<String, String> kwargs = Parser.parse(kwArgsStr);
+            allKwargs.putAll(kwargs);
+
             logger.info("Current class kwargs size = " + kwargs.size());
             logger.info("kwargs = " + Arrays.toString(kwargs.keySet().toArray()));
             // TODO: optimize if there is time
@@ -62,7 +67,7 @@ public final class ParseWrapper {
             String kwargsStr;
 
             logger.info("# Start looking for inherited kwargs");
-            while(!nullKeysCopy.isEmpty() && !(parent == null)) {
+            while(!(parent == null)) {
                 logger.info("\tParent class: " + parent.getName());
                 ctorStrOpt  = SearchClass.getKwargsStringFromCtor(parent);
                 if (!ctorStrOpt.isPresent()) {
@@ -75,6 +80,7 @@ public final class ParseWrapper {
                 kwargsStr = ctorStrOpt.get();
                 logger.info("\t\t-> value= " + kwargsStr);
                 parentKwargs = Parser.parse(kwargsStr);
+                parentKwargs.forEach((key, value)  -> allKwargs.putIfAbsent(key, value));
                 logger.info("\t\t-> kwargs size= " + parentKwargs.size());
 
                 for (String key : nullKeys) {
@@ -100,7 +106,7 @@ public final class ParseWrapper {
             logger.info("# Start looking for inherited kwargs");
 
             // convert HashMap<String, String> to HashMap<String, ValueWrapper>
-            dependencies = checkDependencies(kwargs);
+            dependencies = checkDependencies(allKwargs);
             values = wrapValues(kwargs, ctClass);
             logger.info("Size of wrapped hashmap= " + values.size());
         } catch (NotFoundException e) {
@@ -111,12 +117,12 @@ public final class ParseWrapper {
         return values;
     }
 
-    private DirectedAcyclicGraph<String,DefaultEdge> checkDependencies(HashMap<String, String> kwargs) {
+    private DirectedAcyclicGraph<String,DefaultEdge> checkDependencies(HashMap<String, String> allKwargs) {
         DirectedAcyclicGraph<String,DefaultEdge> graph = new DirectedAcyclicGraph<>(DefaultEdge.class);
-        kwargs.keySet().forEach(key -> graph.addVertex(key));
-        for (Map.Entry<String, String> entry : kwargs.entrySet()) {
+        allKwargs.keySet().forEach(key -> graph.addVertex(key));
+        for (Map.Entry<String, String> entry : allKwargs.entrySet()) {
             logger.info("Getting dependencies for " + entry.getKey());
-            List<String> dep = getDependenciesInValue(kwargs.keySet(), entry.getValue());
+            List<String> dep = getDependenciesInValue(allKwargs.keySet(), entry.getValue());
             logger.info("\t-> Dependencies found: "+ Arrays.toString(dep.toArray()));
             dep.forEach(d -> {
                 try {
@@ -237,11 +243,15 @@ public final class ParseWrapper {
     }
 
 
-    public List<String> getSortedParameters() {
+    public List<String> getSortedParameters(HashMap<String, ValueWrapper> myParameters) {
         TopologicalOrderIterator<String, DefaultEdge> topologicalSort = new TopologicalOrderIterator<>(dependencies);
         LinkedList<String> sortedList = new LinkedList<>();
         while (topologicalSort.hasNext()) {
-            sortedList.add(topologicalSort.next());
+            String vertex = topologicalSort.next();
+            if(myParameters.containsKey(vertex)) {
+                sortedList.add(vertex);
+            }
+
         }
         return sortedList;
     }
