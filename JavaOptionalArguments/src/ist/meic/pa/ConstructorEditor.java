@@ -64,8 +64,8 @@ public class ConstructorEditor {
             constructorBuilder.append("update$all();");
             constructorBuilder.append(" }");
             logger.log(Level.INFO, "The default constructor is: " + constructorBuilder.toString());
-            CtConstructor newConstructor = new CtNewConstructor().make(constructorBuilder.toString(), ctClass);
-            ctClass.addConstructor(newConstructor);
+            defaultConstructor = new CtNewConstructor().make(constructorBuilder.toString(), ctClass);
+            ctClass.addConstructor(defaultConstructor);
         }
 
     }
