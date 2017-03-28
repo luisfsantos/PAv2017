@@ -103,7 +103,7 @@ public class ConstructorEditor {
         constructorBuilder.append("{");
         Object[] ola;
         constructorBuilder.append("if (($1.length%2) != 0) {" +
-                "throw new RuntimeException(\"Odd number of parameters in constructor expected even: \" + $1.length);" +
+                "throw new RuntimeException(\"Odd number of parameters (\" + $1.length + \") in constructor,  expected even.\");" +
                 "}");
 
         constructorBuilder.append(
