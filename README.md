@@ -1,5 +1,5 @@
 # PAv2017
-Project Repo -- PAv 2017 (Catarina Cepada, Illya Gerasymchuk e Luis Santos)
+Project Repo -- PAv 2017 (Catarina Cepeda, Illya Gerasymchuk e Luis Santos)
 
 
 ## Run
